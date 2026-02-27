@@ -5,13 +5,14 @@ const fs = require("fs");
 // Create Project
 exports.createProject = async (req, res) => {
   try {
-    const { title, link, description, language, credentials } = req.body;
+    const { title, link, description, language, credentials, type } = req.body;
     
     const projectData = {
       title,
       link,
       description,
       language,
+      type: (type && ["ecommerce", "informative"].includes(type)) ? type : undefined,
       credentials: credentials || [],
       image: req.file ? `/images/Projects/${req.file.filename}` : null
     };
@@ -26,7 +27,11 @@ exports.createProject = async (req, res) => {
 // Get All Projects
 exports.getAllProjects = async (req, res) => {
   try {
-    const projects = await Project.find().sort({ createdAt: -1 });
+    const filter = {};
+    if (req.query.type && ["ecommerce", "informative"].includes(req.query.type)) {
+      filter.type = req.query.type;
+    }
+    const projects = await Project.find(filter).sort({ createdAt: -1 });
     res.status(200).json({ success: true, count: projects.length, data: projects });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -54,7 +59,7 @@ exports.updateProject = async (req, res) => {
       return res.status(404).json({ success: false, message: "Project not found" });
     }
 
-    const { title, link, description, language, credentials } = req.body;
+    const { title, link, description, language, credentials, type } = req.body;
     
     if (req.file) {
       // Delete old image
@@ -71,6 +76,9 @@ exports.updateProject = async (req, res) => {
     project.link = link || project.link;
     project.description = description || project.description;
     project.language = language || project.language;
+    if (type && ["ecommerce", "informative"].includes(type)) {
+      project.type = type;
+    }
     if (credentials !== undefined) project.credentials = credentials;
 
     await project.save();
