@@ -10,13 +10,10 @@ const setupUser = async () => {
     await mongoose.connect(process.env.MONGO_URI);
     console.log("Connected to MongoDB");
 
-    const existingUser = await User.findOne();
-    if (existingUser) {
-      console.log("User already exists");
-      process.exit(0);
-    }
+    await User.deleteMany({});
+    console.log("Deleted existing users");
 
-    const pin = process.env.ADMIN_PIN || "7860";
+    const pin = process.env.ADMIN_PIN || "1996";
     const hashedPin = await bcrypt.hash(pin, 10);
 
     await User.create({
@@ -25,7 +22,7 @@ const setupUser = async () => {
       lockUntil: null
     });
 
-    console.log(`User created successfully with PIN: ${pin}`);
+    console.log(`User created successfully with new PIN`);
     process.exit(0);
   } catch (error) {
     console.error("Error:", error.message);
