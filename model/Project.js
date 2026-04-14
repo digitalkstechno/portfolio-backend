@@ -17,7 +17,7 @@ const projectSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ["ecommerce", "informative"],
+    enum: ["ecommerce", "informative", "innovation"],
     default: "ecommerce",
     index: true
   },

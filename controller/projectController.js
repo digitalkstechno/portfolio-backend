@@ -12,7 +12,7 @@ exports.createProject = async (req, res) => {
       link,
       description,
       language,
-      type: (type && ["ecommerce", "informative"].includes(type)) ? type : undefined,
+      type: (type && ["ecommerce", "informative", "innovation"].includes(type)) ? type : undefined,
       credentials: credentials || [],
       image: req.file ? `/images/Projects/${req.file.filename}` : null
     };
@@ -28,7 +28,7 @@ exports.createProject = async (req, res) => {
 exports.getAllProjects = async (req, res) => {
   try {
     const filter = {};
-    if (req.query.type && ["ecommerce", "informative"].includes(req.query.type)) {
+    if (req.query.type && ["ecommerce", "informative", "innovation"].includes(req.query.type)) {
       filter.type = req.query.type;
     }
     const projects = await Project.find(filter).sort({ createdAt: -1 });
@@ -76,7 +76,7 @@ exports.updateProject = async (req, res) => {
     project.link = link || project.link;
     project.description = description || project.description;
     project.language = language || project.language;
-    if (type && ["ecommerce", "informative"].includes(type)) {
+    if (type && ["ecommerce", "informative", "innovation"].includes(type)) {
       project.type = type;
     }
     if (credentials !== undefined) project.credentials = credentials;
