@@ -13,7 +13,7 @@ const setupUser = async () => {
     await User.deleteMany({});
     console.log("Deleted existing users");
 
-    const pin = process.env.ADMIN_PIN || "1996";
+    const pin = process.env.ADMIN_PIN ;
     const hashedPin = await bcrypt.hash(pin, 10);
 
     await User.create({
