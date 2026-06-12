@@ -1,16 +1,17 @@
 const MarketingClient = require("../model/MarketingClient");
-const path = require("path");
-const fs = require("fs");
+const { uploadToExternalService, updateFileOnExternalService, deleteFileFromExternalService } = require("../utils/externalUpload");
 
 exports.create = async (req, res) => {
   try {
     const { title, description, link } = req.body;
     
+    const imageUrl = req.file ? await uploadToExternalService(req.file, "MarketingClients") : null;
+
     const data = {
       title,
       description,
       link,
-      image: req.file ? `/images/MarketingClients/${req.file.filename}` : null
+      image: imageUrl
     };
 
     const client = await MarketingClient.create(data);
@@ -51,11 +52,7 @@ exports.update = async (req, res) => {
     const { title, description, link } = req.body;
     
     if (req.file) {
-      if (client.image) {
-        const oldImagePath = path.join(__dirname, "../public", client.image);
-        if (fs.existsSync(oldImagePath)) fs.unlinkSync(oldImagePath);
-      }
-      client.image = `/images/MarketingClients/${req.file.filename}`;
+      client.image = await updateFileOnExternalService(client.image, req.file);
     }
 
     client.title = title || client.title;
@@ -77,8 +74,7 @@ exports.delete = async (req, res) => {
     }
 
     if (client.image) {
-      const imagePath = path.join(__dirname, "../public", client.image);
-      if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
+      await deleteFileFromExternalService(client.image);
     }
 
     await MarketingClient.findByIdAndDelete(req.params.id);

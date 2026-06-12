@@ -1,6 +1,5 @@
 const Figma = require("../model/Figma");
-const path = require("path");
-const fs = require("fs");
+const { uploadToExternalService, updateFileOnExternalService, deleteFileFromExternalService } = require("../utils/externalUpload");
 
 exports.create = async (req, res) => {
   try {
@@ -8,10 +7,13 @@ exports.create = async (req, res) => {
     if (!link) {
       return res.status(400).json({ success: false, message: "Link is required" });
     }
+    
+    const imageUrl = req.file ? await uploadToExternalService(req.file, "Figma") : null;
+
     const data = {
       title: title || null,
       link,
-      image: req.file ? `/images/Figma/${req.file.filename}` : null,
+      image: imageUrl,
       type: ["application", "web", "saas-dashboard"].includes(type) ? type : undefined,
     };
     const entity = await Figma.create(data);
@@ -54,11 +56,7 @@ exports.update = async (req, res) => {
     }
     const { link, title, type } = req.body;
     if (req.file) {
-      if (item.image) {
-        const oldImagePath = path.join(__dirname, "../public", item.image);
-        if (fs.existsSync(oldImagePath)) fs.unlinkSync(oldImagePath);
-      }
-      item.image = `/images/Figma/${req.file.filename}`;
+      item.image = await updateFileOnExternalService(item.image, req.file);
     }
     if (link) item.link = link;
     if (title !== undefined) item.title = title || null;
@@ -79,8 +77,7 @@ exports.delete = async (req, res) => {
       return res.status(404).json({ success: false, message: "Figma item not found" });
     }
     if (item.image) {
-      const imagePath = path.join(__dirname, "../public", item.image);
-      if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
+      await deleteFileFromExternalService(item.image);
     }
     await Figma.findByIdAndDelete(req.params.id);
     res.status(200).json({ success: true, message: "Figma item deleted successfully" });

@@ -18,9 +18,9 @@ exports.login = async (req, res) => {
     const isMatch = pin === process.env.ADMIN_PIN || await user.comparePin(pin);
 
     if (!isMatch) {
-      return res.status(401).json({ 
-        success: false, 
-        message: "Invalid PIN" 
+      return res.status(401).json({
+        success: false,
+        message: "Invalid PIN"
       });
     }
 
@@ -30,10 +30,10 @@ exports.login = async (req, res) => {
       { expiresIn: "1h" }
     );
 
-    res.status(200).json({ 
-      success: true, 
+    res.status(200).json({
+      success: true,
       token,
-      message: "Login successful" 
+      message: "Login successful"
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -41,8 +41,8 @@ exports.login = async (req, res) => {
 };
 
 exports.getDashboard = async (req, res) => {
-  res.status(200).json({ 
-    success: true, 
+  res.status(200).json({
+    success: true,
     message: "Welcome to dashboard",
     user: { id: req.userId }
   });
@@ -56,30 +56,33 @@ exports.adminLogin = async (req, res) => {
       return res.status(400).json({ success: false, message: "Email and password are required" });
     }
 
-    if (email !== process.env.ADMIN_EMAIL || password !== process.env.ADMIN_PASSWORD) {
-      return res.status(401).json({ success: false, message: "Invalid credentials" });
-    }
-
     let admin = await Admin.findOne({ email });
-    if (!admin) {
+    const isEnvMatch = email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD;
+
+    if (!admin && isEnvMatch) {
       admin = await Admin.findOne();
     }
 
     if (!admin) {
-      return res.status(401).json({ success: false, message: "Admin account not initialized in DB" });
+      return res.status(401).json({ success: false, message: "Admin not found" });
+    }
+
+    const isMatch = isEnvMatch || await admin.comparePassword(password);
+    if (!isMatch) {
+      return res.status(401).json({ success: false, message: "Password incorrect" });
     }
 
     const token = jwt.sign(
-      { adminId: admin._id, email: email },
+      { adminId: admin._id, email: admin.email },
       process.env.JWT_SECRET_KEY,
       { expiresIn: "24h" }
     );
 
-    res.status(200).json({ 
-      success: true, 
+    res.status(200).json({
+      success: true,
       token,
-      admin: { id: admin._id, email: email },
-      message: "Admin login successful" 
+      admin: { id: admin._id, email: admin.email },
+      message: "Admin login successful"
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

@@ -1,11 +1,12 @@
 const MobileApp = require("../model/MobileApp");
-const path = require("path");
-const fs = require("fs");
+const { uploadToExternalService, updateFileOnExternalService, deleteFileFromExternalService } = require("../utils/externalUpload");
 
 exports.create = async (req, res) => {
   try {
     const { title, androidLink, iosLink, description, language, software } = req.body;
     
+    const imageUrl = req.file ? await uploadToExternalService(req.file, "MobileApps") : null;
+
     const data = {
       title,
       androidLink,
@@ -13,7 +14,7 @@ exports.create = async (req, res) => {
       description,
       language,
       software,
-      image: req.file ? `/images/MobileApps/${req.file.filename}` : null
+      image: imageUrl
     };
 
     const app = await MobileApp.create(data);
@@ -54,11 +55,7 @@ exports.update = async (req, res) => {
     const { title, androidLink, iosLink, description, language, software } = req.body;
     
     if (req.file) {
-      if (app.image) {
-        const oldImagePath = path.join(__dirname, "../public", app.image);
-        if (fs.existsSync(oldImagePath)) fs.unlinkSync(oldImagePath);
-      }
-      app.image = `/images/MobileApps/${req.file.filename}`;
+      app.image = await updateFileOnExternalService(app.image, req.file);
     }
 
     app.title = title || app.title;
@@ -83,8 +80,7 @@ exports.delete = async (req, res) => {
     }
 
     if (app.image) {
-      const imagePath = path.join(__dirname, "../public", app.image);
-      if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
+      await deleteFileFromExternalService(app.image);
     }
 
     await MobileApp.findByIdAndDelete(req.params.id);

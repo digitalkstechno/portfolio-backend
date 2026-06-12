@@ -1,16 +1,17 @@
 const DigitalCard = require("../model/DigitalCard");
-const path = require("path");
-const fs = require("fs");
+const { uploadToExternalService, updateFileOnExternalService, deleteFileFromExternalService } = require("../utils/externalUpload");
 
 exports.create = async (req, res) => {
   try {
     const { title, description, link } = req.body;
     
+    const imageUrl = req.file ? await uploadToExternalService(req.file, "DigitalCards") : null;
+
     const data = {
       title,
       description,
       link,
-      image: req.file ? `/images/DigitalCards/${req.file.filename}` : null
+      image: imageUrl
     };
 
     const card = await DigitalCard.create(data);
@@ -51,11 +52,7 @@ exports.update = async (req, res) => {
     const { title, description, link } = req.body;
     
     if (req.file) {
-      if (card.image) {
-        const oldImagePath = path.join(__dirname, "../public", card.image);
-        if (fs.existsSync(oldImagePath)) fs.unlinkSync(oldImagePath);
-      }
-      card.image = `/images/DigitalCards/${req.file.filename}`;
+      card.image = await updateFileOnExternalService(card.image, req.file);
     }
 
     card.title = title || card.title;
@@ -77,8 +74,7 @@ exports.delete = async (req, res) => {
     }
 
     if (card.image) {
-      const imagePath = path.join(__dirname, "../public", card.image);
-      if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
+      await deleteFileFromExternalService(card.image);
     }
 
     await DigitalCard.findByIdAndDelete(req.params.id);

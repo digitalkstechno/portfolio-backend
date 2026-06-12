@@ -1,18 +1,18 @@
 const Software = require("../model/Software");
-const path = require("path");
-const fs = require("fs");
+const { uploadToExternalService, updateFileOnExternalService, deleteFileFromExternalService } = require("../utils/externalUpload");
 
 exports.create = async (req, res) => {
   try {
     const { title, description, link, credentials } = req.body;
     
+    const imageUrl = req.file ? await uploadToExternalService(req.file, "Software") : null;
+
     const data = {
-      
       title,
       description,
       link,
       credentials: credentials || [],
-      image: req.file ? `/images/Software/${req.file.filename}` : null
+      image: imageUrl
     };
 
     const software = await Software.create(data);
@@ -61,13 +61,8 @@ exports.update = async (req, res) => {
     const {  title, description, link, credentials } = req.body;
     
     if (req.file) {
-      if (software.image) {
-        const oldImagePath = path.join(__dirname, "../public", software.image);
-        if (fs.existsSync(oldImagePath)) fs.unlinkSync(oldImagePath);
-      }
-      software.image = `/images/Software/${req.file.filename}`;
+      software.image = await updateFileOnExternalService(software.image, req.file);
     }
-
 
     software.title = title || software.title;
     software.description = description || software.description;
@@ -89,8 +84,7 @@ exports.delete = async (req, res) => {
     }
 
     if (software.image) {
-      const imagePath = path.join(__dirname, "../public", software.image);
-      if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
+      await deleteFileFromExternalService(software.image);
     }
 
     await Software.findByIdAndDelete(req.params.id);

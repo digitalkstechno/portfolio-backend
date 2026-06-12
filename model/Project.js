@@ -23,12 +23,14 @@ const projectSchema = new mongoose.Schema({
   },
   description: {
     type: String,
-    required: true
+    required: false,
+    default: ""
   },
   language: {
     type: String,
-    required: true,
-    trim: true
+    required: false,
+    trim: true,
+    default: ""
   },
   credentials: [{
     role: {

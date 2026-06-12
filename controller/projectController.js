@@ -1,12 +1,13 @@
 const Project = require("../model/Project");
-const path = require("path");
-const fs = require("fs");
+const { uploadToExternalService, updateFileOnExternalService, deleteFileFromExternalService } = require("../utils/externalUpload");
 
 // Create Project
 exports.createProject = async (req, res) => {
   try {
     const { title, link, description, language, credentials, type } = req.body;
     
+    const imageUrl = req.file ? await uploadToExternalService(req.file, "Projects") : null;
+
     const projectData = {
       title,
       link,
@@ -14,7 +15,7 @@ exports.createProject = async (req, res) => {
       language,
       type: (type && ["ecommerce", "informative", "innovation"].includes(type)) ? type : undefined,
       credentials: credentials || [],
-      image: req.file ? `/images/Projects/${req.file.filename}` : null
+      image: imageUrl
     };
 
     const project = await Project.create(projectData);
@@ -62,14 +63,7 @@ exports.updateProject = async (req, res) => {
     const { title, link, description, language, credentials, type } = req.body;
     
     if (req.file) {
-      // Delete old image
-      if (project.image) {
-        const oldImagePath = path.join(__dirname, "../public", project.image);
-        if (fs.existsSync(oldImagePath)) {
-          fs.unlinkSync(oldImagePath);
-        }
-      }
-      project.image = `/images/Projects/${req.file.filename}`;
+      project.image = await updateFileOnExternalService(project.image, req.file);
     }
 
     project.title = title || project.title;
@@ -98,10 +92,7 @@ exports.deleteProject = async (req, res) => {
 
     // Delete image
     if (project.image) {
-      const imagePath = path.join(__dirname, "../public", project.image);
-      if (fs.existsSync(imagePath)) {
-        fs.unlinkSync(imagePath);
-      }
+      await deleteFileFromExternalService(project.image);
     }
 
     await Project.findByIdAndDelete(req.params.id);
